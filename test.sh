@@ -68,7 +68,7 @@ make_slices() {
 run_test() {
   local name="$1"
   {
-    echo '# ${name}'
+    echo "# test: ${name}"
 
     set -x
 
