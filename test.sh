@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -oxue pipefail
+set -oue pipefail
 
 # device names that persist across reboots
 d16_a=/dev/disk/by-path/pci-0000:82:00.0-sas-phy0-lun-0
@@ -16,7 +16,9 @@ d6_b=/dev/disk/by-path/pci-0000:00:1f.2-ata-1.0
 POOL=testpool
 
 clean_up() {
-  zpool destroy $POOL || true
+  if zpool status $POOL; then {
+    zpool destroy $POOL
+  } fi
 
   sgdisk --zap-all $d16_a &
   sgdisk --zap-all $d16_b &
@@ -34,7 +36,7 @@ clean_up() {
 }
 
 make_whole_disk() {
-  zpool create $POOL \
+  zpool create -f $POOL \
     raidz2 $d16_a $d16_b $d16_c $d16_d  $d8_a $d8_b $d8_c  $d6_a $d6_b
 }
 
@@ -68,11 +70,22 @@ run_test() {
   {
     echo '# ${name}'
 
+    set -x
+
     # run fio from job file
+
+    set +x
   } | tee "report-$(date +%s)-${name}.txt"
 }
 
-{
+ensure_root() {
+  if [[ $EUID -ne 0 ]]; then {
+    echo "Run as root!"
+    exit 1
+  } fi
+}
+
+main() {
   # whole disk
   clean_up
   make_whole_disk
@@ -82,4 +95,10 @@ run_test() {
   clean_up
   make_slices
   run_test slices
+
+  # clean up
+  clean_up
 }
+
+ensure_root
+main
