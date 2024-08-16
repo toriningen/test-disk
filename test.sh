@@ -13,7 +13,7 @@ d8_c=/dev/disk/by-path/pci-0000:82:00.0-sas-phy7-lun-0
 d6_a=/dev/disk/by-path/pci-0000:82:00.0-sas-phy2-lun-0
 d6_b=/dev/disk/by-path/pci-0000:00:1f.2-ata-1.0
 
-POOL=testpool
+export POOL=testpool
 
 clean_up() {
   if zpool status $POOL; then {
@@ -67,15 +67,8 @@ make_slices() {
 
 run_test() {
   local name="$1"
-  {
-    echo "# test: ${name}"
-
-    set -x
-
-    # run fio from job file
-
-    set +x
-  } | tee "report-$(date +%s)-${name}.txt"
+  local report="report-$(date +%s)-${name}.txt"
+  fio --output="${report}" job.fio
 }
 
 ensure_root() {
